@@ -1,0 +1,432 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Civic Action Center - Administration | CivicFix{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  
+  <!-- DASHBOARD TITLE & ACTION BAR -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-inline-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-danger-subtle text-danger fw-bold text-uppercase px-2 py-1">Municipal Operations</span>
+        <span class="text-muted small">Live Intelligence Center</span>
+      </div>
+      <h1 class="fw-extrabold fs-2 m-0 text-secondary">CIVIC ACTION CENTER</h1>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'report_issue' %}" class="btn btn-outline-teal btn-sm">
+        <i class="bi bi-plus-lg me-1"></i> New Report
+      </a>
+      <button class="btn btn-sm btn-outline-secondary" onclick="window.location.reload();">
+        <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+      </button>
+    </div>
+  </div>
+
+  <!-- 1. KEY METRIC SUMMARY CARDS -->
+  <div class="row g-3 mb-4">
+    <!-- Total Reports -->
+    <div class="col-6 col-md-3 col-xl">
+      <div class="stat-card shadow-sm h-100">
+        <div class="stat-icon bg-secondary-subtle text-secondary">
+          <i class="bi bi-folder2-open"></i>
+        </div>
+        <div>
+          <div class="fs-4 fw-bold">{{ total_reports }}</div>
+          <div class="small text-muted">Total Reports</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Potholes -->
+    <div class="col-6 col-md-3 col-xl">
+      <div class="stat-card shadow-sm h-100" style="border-left: 4px solid var(--cf-pothole);">
+        <div class="stat-icon bg-warning-subtle text-warning">
+          🕳️
+        </div>
+        <div>
+          <div class="fs-4 fw-bold">{{ pothole_count }}</div>
+          <div class="small text-muted">Road Issues</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Water -->
+    <div class="col-6 col-md-3 col-xl">
+      <div class="stat-card shadow-sm h-100" style="border-left: 4px solid var(--cf-water);">
+        <div class="stat-icon bg-info-subtle text-info">
+          💧
+        </div>
+        <div>
+          <div class="fs-4 fw-bold">{{ water_count }}</div>
+          <div class="small text-muted">Water Issues</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Waste -->
+    <div class="col-6 col-md-3 col-xl">
+      <div class="stat-card shadow-sm h-100" style="border-left: 4px solid var(--cf-waste);">
+        <div class="stat-icon bg-success-subtle text-success">
+          🗑️
+        </div>
+        <div>
+          <div class="fs-4 fw-bold">{{ waste_count }}</div>
+          <div class="small text-muted">Waste Issues</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Critical -->
+    <div class="col-6 col-md-3 col-xl">
+      <div class="stat-card shadow-sm h-100" style="border-left: 4px solid var(--cf-critical);">
+        <div class="stat-icon bg-danger-subtle text-danger">
+          <i class="bi bi-exclamation-octagon-fill"></i>
+        </div>
+        <div>
+          <div class="fs-4 fw-bold text-danger">{{ critical_count }}</div>
+          <div class="small text-muted">Critical Urgency</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- In Progress -->
+    <div class="col-6 col-md-3 col-xl">
+      <div class="stat-card shadow-sm h-100">
+        <div class="stat-icon bg-primary-subtle text-primary">
+          <i class="bi bi-gear-wide-connected"></i>
+        </div>
+        <div>
+          <div class="fs-4 fw-bold">{{ in_progress_count }}</div>
+          <div class="small text-muted">In Progress</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resolved -->
+    <div class="col-6 col-md-3 col-xl">
+      <div class="stat-card shadow-sm h-100">
+        <div class="stat-icon bg-success-subtle text-success">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <div>
+          <div class="fs-4 fw-bold text-success">{{ resolved_count }}</div>
+          <div class="small text-muted">Resolved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. WHAT NEEDS ATTENTION? SECTION -->
+  <div class="card card-civic p-4 mb-4 border-0" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); box-shadow: var(--cf-shadow-md);">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <span class="spinner-grow spinner-grow-sm text-danger" role="status"></span>
+        <h4 class="fw-extrabold m-0 text-danger" style="letter-spacing: -0.5px;">WHAT NEEDS ATTENTION?</h4>
+      </div>
+      <span class="badge bg-danger-subtle text-danger fw-bold">Active Hotspots & Urgent Incidents</span>
+    </div>
+
+    <div class="row g-3">
+      <!-- DETECTED CLUSTERS -->
+      {% if detected_clusters %}
+        {% for cluster in detected_clusters %}
+          <div class="col-md-6 col-xl-4">
+            <div class="cluster-alert-card {{ cluster.urgency_color }} h-100">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge bg-{{ cluster.urgency_color }} fw-bold">
+                  <i class="bi bi-diagram-3-fill me-1"></i> {{ cluster.title }}
+                </span>
+                <span class="badge bg-dark">{{ cluster.count }} Reports</span>
+              </div>
+              
+              <h6 class="fw-bold text-dark mb-1"><i class="bi bi-geo-alt-fill text-muted"></i> {{ cluster.location_label }}</h6>
+              <div class="small text-muted mb-2">
+                Priority: <strong class="text-{{ cluster.urgency_color }}">{{ cluster.priority }}</strong> &bull; Radius: 800m hotspot
+              </div>
+
+              <div class="p-2 bg-white rounded border small mb-2 text-dark">
+                <strong>Recommended:</strong> {{ cluster.recommended_action }}
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center small pt-1">
+                <span class="text-muted">{{ cluster.category_display }} Team</span>
+                <button class="btn btn-sm btn-outline-dark py-0 px-2" style="font-size: 0.75rem;" onclick="filterMapCategory('{{ cluster.category }}')">
+                  Locate Cluster <i class="bi bi-crosshair"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- INDIVIDUAL CRITICAL ATTENTION ITEMS -->
+      {% for issue in attention_issues|slice:":3" %}
+        <div class="col-md-6 col-xl-4">
+          <div class="cluster-alert-card danger h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge bg-danger fw-bold">
+                <i class="bi bi-exclamation-diamond-fill me-1"></i> {{ issue.priority }} Priority
+              </span>
+              <span class="badge bg-secondary">{{ issue.status }}</span>
+            </div>
+
+            <h6 class="fw-bold text-dark mb-1 text-truncate">{{ issue.icon_emoji }} {{ issue.title }}</h6>
+            <div class="small text-muted mb-2">
+              <i class="bi bi-geo-alt"></i> {{ issue.location_name|default:"Marked Location" }}
+            </div>
+
+            <div class="p-2 bg-white rounded border small mb-2 text-dark">
+              <strong>Action:</strong> {{ issue.recommended_action|default:"Inspect immediately." }}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center small pt-1">
+              <span class="text-muted">{{ issue.assigned_department|default:issue.recommended_department }}</span>
+              <a href="{% url 'issue_detail' issue.id %}" class="btn btn-sm btn-danger py-0 px-2 text-white" style="font-size: 0.75rem;">
+                Take Action <i class="bi bi-arrow-right-short"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 3. INTERACTIVE LEAFLET ADMIN MAP WITH FILTERS -->
+  <div class="card card-civic p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-map-fill text-teal fs-5"></i>
+        <h5 class="fw-bold m-0">Municipal Geographic Map & Cluster Intelligence</h5>
+      </div>
+
+      <!-- Map Filter Buttons -->
+      <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Map filters">
+        <button type="button" class="btn btn-primary active" data-map-filter="all">All Issues</button>
+        <button type="button" class="btn btn-outline-secondary" data-map-filter="pothole">🕳️ Potholes</button>
+        <button type="button" class="btn btn-outline-secondary" data-map-filter="water">💧 Water</button>
+        <button type="button" class="btn btn-outline-secondary" data-map-filter="waste">🗑️ Waste</button>
+        <button type="button" class="btn btn-outline-secondary" data-map-filter="critical">Critical</button>
+        <button type="button" class="btn btn-outline-secondary" data-map-filter="unresolved">Unresolved</button>
+        <button type="button" class="btn btn-outline-secondary" data-map-filter="clusters">Clusters Only</button>
+      </div>
+    </div>
+
+    <!-- Leaflet Admin Map Container -->
+    <div id="admin-map" class="border shadow-sm"></div>
+    <div class="d-flex justify-content-between align-items-center mt-2 small text-muted px-1">
+      <div>
+        <span class="badge bg-warning text-dark me-2">🟠 Pothole</span>
+        <span class="badge bg-info text-dark me-2">🔵 Water</span>
+        <span class="badge bg-success me-2">🟢 Waste</span>
+        <span class="badge bg-danger-subtle text-danger">⭕ Cluster Zone</span>
+      </div>
+      <div>Click on any marker or cluster circle for details and action tools.</div>
+    </div>
+  </div>
+
+  <!-- 3.5 CIVIC IMPACT & POINTS LEADERBOARD -->
+  <div class="row g-4 mb-4">
+    <!-- Top Field Officers / Admins -->
+    <div class="col-lg-6">
+      <div class="card card-civic p-4 h-100 border-0" style="background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-shield-fill-check text-success fs-5"></i>
+            <h6 class="fw-bold m-0 text-success">TOP RESOLVING OFFICERS</h6>
+          </div>
+          <span class="badge bg-success-subtle text-success fw-bold">Impact Points</span>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <tbody>
+              {% for officer in top_officers %}
+                <tr>
+                  <td style="width: 32px;">
+                    {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}<span class="badge bg-light text-muted">{{ forloop.counter }}</span>{% endif %}
+                  </td>
+                  <td>
+                    <div class="fw-bold text-dark">{{ officer.user.username }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ officer.badge_title }}</div>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-light text-secondary border">{{ officer.resolved_count }} resolved</span>
+                  </td>
+                  <td class="text-end">
+                    <span class="badge bg-success fw-bold">{{ officer.points }} pts</span>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="text-muted text-center py-2 small">No officer resolution points recorded yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Contributing Residents -->
+    <div class="col-lg-6">
+      <div class="card card-civic p-4 h-100 border-0" style="background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-stars text-primary fs-5"></i>
+            <h6 class="fw-bold m-0 text-primary">TOP COMMUNITY CITIZENS</h6>
+          </div>
+          <span class="badge bg-primary-subtle text-primary fw-bold">Citizen Karma</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <tbody>
+              {% for citizen in top_citizens %}
+                <tr>
+                  <td style="width: 32px;">
+                    {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}<span class="badge bg-light text-muted">{{ forloop.counter }}</span>{% endif %}
+                  </td>
+                  <td>
+                    <div class="fw-bold text-dark">{{ citizen.user.username }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ citizen.badge_title }}</div>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-light text-secondary border">{{ citizen.reports_count }} reports</span>
+                  </td>
+                  <td class="text-end">
+                    <span class="badge bg-primary fw-bold">{{ citizen.points }} pts</span>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="text-muted text-center py-2 small">Citizen reporting karma is updated live on submissions.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 4. SEARCHABLE & FILTERABLE ISSUE TABLE -->
+  <div class="card card-civic p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h5 class="fw-bold m-0 d-flex align-items-center gap-2">
+        <i class="bi bi-table text-teal"></i> Issue Management Queue
+      </h5>
+
+      <!-- Search & Filters Form -->
+      <form method="get" class="row g-2 align-items-center">
+        <div class="col-auto">
+          <input type="text" name="q" value="{{ search_query }}" class="form-control form-control-sm" placeholder="Search title, code, street...">
+        </div>
+        <div class="col-auto">
+          <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">All Categories</option>
+            <option value="pothole" {% if category_filter == 'pothole' %}selected{% endif %}>Potholes</option>
+            <option value="water" {% if category_filter == 'water' %}selected{% endif %}>Water</option>
+            <option value="waste" {% if category_filter == 'waste' %}selected{% endif %}>Waste</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">All Statuses</option>
+            <option value="Submitted" {% if status_filter == 'Submitted' %}selected{% endif %}>Submitted</option>
+            <option value="Under Review" {% if status_filter == 'Under Review' %}selected{% endif %}>Under Review</option>
+            <option value="Assigned" {% if status_filter == 'Assigned' %}selected{% endif %}>Assigned</option>
+            <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
+            <option value="Resolved" {% if status_filter == 'Resolved' %}selected{% endif %}>Resolved</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">All Priorities</option>
+            <option value="Critical" {% if priority_filter == 'Critical' %}selected{% endif %}>Critical</option>
+            <option value="High" {% if priority_filter == 'High' %}selected{% endif %}>High</option>
+            <option value="Medium" {% if priority_filter == 'Medium' %}selected{% endif %}>Medium</option>
+            <option value="Low" {% if priority_filter == 'Low' %}selected{% endif %}>Low</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-sm btn-outline-primary">Filter</button>
+          {% if category_filter or status_filter or priority_filter or search_query %}
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-sm btn-link text-muted">Clear</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Code</th>
+            <th>Type</th>
+            <th>Title & Location</th>
+            <th>Priority</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in issues %}
+            <tr>
+              <td>
+                <span class="badge bg-dark fw-semibold font-monospace">{{ issue.tracking_code }}</span>
+              </td>
+              <td>
+                <span class="fs-5 me-1">{{ issue.icon_emoji }}</span>
+                <span class="small fw-semibold text-muted">{{ issue.get_issue_category_display }}</span>
+              </td>
+              <td>
+                <div class="fw-bold text-dark">{{ issue.title }}</div>
+                <div class="small text-muted"><i class="bi bi-geo-alt"></i> {{ issue.location_name|default:"Coordinates Pinned" }}</div>
+              </td>
+              <td>
+                <span class="badge {{ issue.priority_badge_class }}">{{ issue.priority }}</span>
+              </td>
+              <td>
+                <span class="small text-secondary fw-semibold">{{ issue.assigned_department|default:issue.recommended_department|default:"Unassigned" }}</span>
+              </td>
+              <td>
+                <span class="badge badge-civic {{ issue.status_badge_class }}">{{ issue.status }}</span>
+              </td>
+              <td class="small text-muted">
+                {{ issue.created_at|date:"M d, Y" }}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'issue_detail' issue.id %}" class="btn btn-sm btn-civic-outline">
+                  Manage <i class="bi bi-arrow-right"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                No civic issues match your search criteria.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/admin_map.js' %}"></script>
+<script>
+function filterMapCategory(cat) {
+  const btn = document.querySelector(`[data-map-filter="${cat}"]`);
+  if (btn) btn.click();
+  document.getElementById('admin-map').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

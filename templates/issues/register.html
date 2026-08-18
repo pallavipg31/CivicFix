@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register | CivicFix{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      
+      <div class="card card-civic p-4 p-md-5 shadow-lg border-0" style="border-radius: 20px;">
+        <div class="text-center mb-4">
+          <div class="brand-badge justify-content-center mb-2">
+            <div class="logo-icon"><i class="bi bi-geo-fill"></i></div>
+            <div class="logo-text">Civic<span>Fix</span></div>
+          </div>
+          <h4 class="fw-bold">Create Resident Account</h4>
+          <p class="text-muted small">Save your submissions and get live civic updates</p>
+        </div>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          
+          {% for field in form %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}
+                <div class="form-text small" style="font-size: 0.75rem;">{{ field.help_text|safe }}</div>
+              {% endif %}
+              {% for error in field.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+
+          <button type="submit" class="btn btn-civic-primary w-100 py-2 fw-bold shadow-sm mb-3">
+            Register Account <i class="bi bi-arrow-right-short ms-1"></i>
+          </button>
+        </form>
+
+        <div class="text-center border-top pt-3 small text-muted">
+          Already have an account? <a href="{% url 'login' %}" class="fw-bold text-teal text-decoration-none">Sign In</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

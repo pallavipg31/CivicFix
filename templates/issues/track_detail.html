@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Track Issue #{{ issue.tracking_code }} | CivicFix{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      
+      <!-- TOP STATUS CARD -->
+      <div class="card card-civic p-4 mb-4 text-center" style="background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);">
+        <div class="d-inline-flex align-items-center gap-2 mb-2">
+          <span class="fs-2">{{ issue.icon_emoji }}</span>
+          <span class="badge bg-dark font-monospace fs-5 px-3 py-2">#{{ issue.tracking_code }}</span>
+          <span class="badge {{ issue.priority_badge_class }} fs-6 px-3 py-2">{{ issue.priority }} Priority</span>
+        </div>
+        <h1 class="fw-bold fs-3 mb-2">{{ issue.title }}</h1>
+        <p class="text-muted small mb-0">
+          <i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ issue.location_name|default:"Pinned Location" }} &bull; Reported {{ issue.created_at|date:"F d, Y, g:i a" }}
+        </p>
+      </div>
+
+      <!-- 5-STAGE PROGRESS TIMELINE -->
+      <div class="card card-civic p-4 mb-4">
+        <h5 class="fw-bold text-teal mb-4 text-center">
+          <i class="bi bi-diagram-3-fill me-2"></i> Resolution Progress Tracker
+        </h5>
+
+        <div class="civic-timeline">
+          {% for stage in timeline_stages %}
+            <div class="timeline-node {% if stage.is_completed %}completed{% endif %} {% if stage.is_current %}current{% endif %}">
+              <div class="node-icon">
+                {% if stage.is_completed %}
+                  <i class="bi bi-check-lg"></i>
+                {% else %}
+                  {{ stage.index }}
+                {% endif %}
+              </div>
+              <div class="node-label">{{ stage.name }}</div>
+              <div class="text-muted d-none d-md-block" style="font-size: 0.72rem; max-width: 140px; margin: 4px auto 0;">
+                {{ stage.description }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="text-center mt-3 pt-3 border-top">
+          <span class="text-muted small">Current Operational Status:</span>
+          <span class="badge badge-civic {{ issue.status_badge_class }} fs-6 ms-2 px-3 py-1">{{ issue.status }}</span>
+          {% if issue.assigned_department %}
+            <div class="small text-secondary fw-semibold mt-1">
+              <i class="bi bi-building"></i> Assigned to <strong>{{ issue.assigned_department }}</strong>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- RESOLUTION PROOF (BEFORE / AFTER EVIDENCE) -->
+      {% if issue.is_resolved %}
+        <div class="card card-civic p-4 mb-4 border-success shadow-sm" style="background: #f0fdf4;">
+          <div class="text-center mb-4">
+            <span class="badge bg-success px-3 py-2 fs-6 mb-2">
+              <i class="bi bi-patch-check-fill me-1"></i> Official Resolution Proof
+            </span>
+            <h3 class="fw-bold text-dark">This Issue Has Been Verified & Resolved</h3>
+            <p class="text-muted small mb-0">Below is the photographic evidence provided by the municipal field crew.</p>
+          </div>
+
+          <div class="row g-4 mb-4">
+            <!-- BEFORE -->
+            <div class="col-md-6">
+              <div class="proof-card shadow-sm">
+                {% if issue.image %}
+                  <img src="{{ issue.image.url }}" alt="Before">
+                {% else %}
+                  <div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height: 260px;">
+                    Reported Issue
+                  </div>
+                {% endif %}
+                <span class="proof-badge before">BEFORE (Reported Condition)</span>
+              </div>
+            </div>
+
+            <!-- AFTER -->
+            <div class="col-md-6">
+              <div class="proof-card shadow-sm">
+                {% if issue.resolution_image %}
+                  <img src="{{ issue.resolution_image.url }}" alt="After Resolution">
+                {% else %}
+                  <div class="d-flex align-items-center justify-content-center bg-light text-success fw-bold" style="height: 260px;">
+                    Verified Clean / Repaired
+                  </div>
+                {% endif %}
+                <span class="proof-badge after">AFTER (Resolution Proof)</span>
+              </div>
+            </div>
+          </div>
+
+          {% if issue.resolution_note %}
+            <div class="p-3 bg-white rounded border shadow-sm">
+              <h6 class="fw-bold text-success mb-1"><i class="bi bi-clipboard2-check-fill me-1"></i> Resolution Report:</h6>
+              <p class="text-dark mb-1">{{ issue.resolution_note }}</p>
+              {% if issue.resolved_at %}
+                <div class="small text-muted">
+                  <i class="bi bi-clock-history me-1"></i> Completed on {{ issue.resolved_at|date:"F d, Y, g:i a" }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- PROBLEM DETAILS & AI SUMMARY -->
+      <div class="card card-civic p-4 mb-4">
+        <h5 class="fw-bold text-teal mb-3">
+          <i class="bi bi-card-text me-1"></i> Problem Details & AI Summary
+        </h5>
+        
+        <p class="text-dark bg-light p-3 rounded border mb-3">{{ issue.description }}</p>
+
+        <div class="row g-3 small">
+          <div class="col-md-6">
+            <div class="p-3 bg-white rounded border">
+              <div class="text-muted fw-bold mb-1"><i class="bi bi-cpu text-teal me-1"></i> AI Classification</div>
+              <div class="fw-semibold">{{ issue.issue_type|default:issue.get_issue_category_display }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-white rounded border">
+              <div class="text-muted fw-bold mb-1"><i class="bi bi-shield-exclamation text-danger me-1"></i> Identified Safety Risk</div>
+              <div class="fw-semibold">{{ issue.safety_risk|default:"Standard municipal maintenance" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAP VIEW -->
+      {% if issue.latitude and issue.longitude %}
+        <div class="card card-civic p-4 mb-4">
+          <h5 class="fw-bold text-teal mb-3">
+            <i class="bi bi-geo-alt-fill me-1"></i> Location Map
+          </h5>
+          <div id="detail-map" class="border shadow-sm"></div>
+        </div>
+      {% endif %}
+
+      <div class="text-center mt-4">
+        <a href="{% url 'my_reports' %}" class="btn btn-outline-secondary px-4 me-2">
+          <i class="bi bi-list-check me-1"></i> My Submissions
+        </a>
+        <a href="{% url 'report_issue' %}" class="btn btn-civic-primary px-4">
+          <i class="bi bi-plus-lg me-1"></i> Report Another Issue
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if issue.latitude and issue.longitude %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const lat = {{ issue.latitude }};
+  const lng = {{ issue.longitude }};
+  const map = L.map('detail-map').setView([lat, lng], 15);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  const icon = L.divIcon({
+    className: 'custom-track-pin',
+    html: '<div style="background:{{ issue.category_color }};width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">{{ issue.icon_emoji }}</div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+
+  L.marker([lat, lng], { icon: icon }).addTo(map)
+    .bindPopup("<strong>#{{ issue.tracking_code }}</strong><br>{{ issue.title }}")
+    .openPopup();
+});
+</script>
+{% endif %}
+{% endblock %}

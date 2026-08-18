@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Report Civic Issue - Step 1 | CivicFix{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      
+      <!-- Stepper Header -->
+      <div class="text-center mb-5">
+        <span class="badge bg-teal-light text-teal fw-bold px-3 py-1 mb-2">Step 1 of 2</span>
+        <h1 class="fw-bold" style="font-size: 2.3rem;">What problem are you facing?</h1>
+        <p class="text-muted fs-5">
+          Select the civic category below to load the specialized reporting assistant.
+        </p>
+      </div>
+
+      <!-- Category Choices Grid -->
+      <div class="row g-4 justify-content-center">
+        <!-- 1. Pothole / Road Damage -->
+        <div class="col-md-4">
+          <a href="{% url 'report_issue' %}?category=pothole" class="category-card card-pothole h-100">
+            <div class="icon-box">🕳️</div>
+            <h3 class="fw-bold fs-4 mb-2">Pothole / Road Damage</h3>
+            <p class="text-muted small mb-4">
+              Report dangerous potholes, broken asphalt, cracks, sinking roads, and road surface hazards.
+            </p>
+            <span class="btn btn-sm btn-outline-warning fw-bold w-100 rounded-pill py-2">
+              Select Road Damage <i class="bi bi-arrow-right ms-1"></i>
+            </span>
+          </a>
+        </div>
+
+        <!-- 2. Water Supply -->
+        <div class="col-md-4">
+          <a href="{% url 'report_issue' %}?category=water" class="category-card card-water h-100">
+            <div class="icon-box">💧</div>
+            <h3 class="fw-bold fs-4 mb-2">Water Supply</h3>
+            <p class="text-muted small mb-4">
+              Report drinking water outages, pipeline leaks, low tap pressure, contaminated water, or supply schedule failures.
+            </p>
+            <span class="btn btn-sm btn-outline-primary fw-bold w-100 rounded-pill py-2">
+              Select Water Supply <i class="bi bi-arrow-right ms-1"></i>
+            </span>
+          </a>
+        </div>
+
+        <!-- 3. Waste Management -->
+        <div class="col-md-4">
+          <a href="{% url 'report_issue' %}?category=waste" class="category-card card-waste h-100">
+            <div class="icon-box">🗑️</div>
+            <h3 class="fw-bold fs-4 mb-2">Waste Management</h3>
+            <p class="text-muted small mb-4">
+              Report overflowing trash containers, uncollected garbage piles, illegal dumping, and neighborhood sanitation issues.
+            </p>
+            <span class="btn btn-sm btn-outline-success fw-bold w-100 rounded-pill py-2">
+              Select Waste Problem <i class="bi bi-arrow-right ms-1"></i>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Trust Note -->
+      <div class="card card-civic mt-5 p-4 border-0" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);">
+        <div class="d-flex align-items-center gap-3">
+          <div class="fs-2 text-teal">
+            <i class="bi bi-robot"></i>
+          </div>
+          <div>
+            <h6 class="fw-bold mb-1">No Government Jargon Needed</h6>
+            <p class="text-muted small mb-0">
+              Just describe what you see in plain everyday language. Our integrated Groq AI analysis will automatically classify safety risks, identify the correct municipal department, and assign priority.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

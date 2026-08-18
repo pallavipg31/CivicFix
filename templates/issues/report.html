@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Report {{ category_display }} | CivicFix{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      
+      <!-- HEADER & CATEGORY BADGE -->
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-box m-0" style="width: 52px; height: 52px; font-size: 1.6rem; background: var(--cf-{{ category }}-bg); color: var(--cf-{{ category }});">
+            {% if category == 'pothole' %}🕳️{% elif category == 'water' %}💧{% else %}🗑️{% endif %}
+          </div>
+          <div>
+            <h1 class="fw-bold fs-3 mb-0">Report {{ category_display }}</h1>
+            <span class="text-muted small">Step 2: Provide details & locate on map</span>
+          </div>
+        </div>
+        <a href="{% url 'report_issue' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+          <i class="bi bi-arrow-left me-1"></i> Change Problem Type
+        </a>
+      </div>
+
+      <!-- MAIN REPORT FORM -->
+      <form method="post" enctype="multipart/form-data" id="report-form" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <input type="hidden" id="report-category" name="category" value="{{ category }}">
+        {{ form.latitude }}
+        {{ form.longitude }}
+
+        <!-- 1. PROBLEM DESCRIPTION CARD -->
+        <div class="card card-civic p-4 mb-4">
+          <h5 class="fw-bold text-teal mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-chat-left-text-fill"></i> 1. Describe the Problem
+          </h5>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-secondary">Title / Headline <span class="text-danger">*</span></label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <div class="text-danger small mt-1">{{ form.title.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-secondary">Detailed Description <span class="text-danger">*</span></label>
+            {{ form.description }}
+            <div class="form-text">Describe what you observe in your own words. Groq AI will extract technical severity and safety risks.</div>
+            {% if form.description.errors %}
+              <div class="text-danger small mt-1">{{ form.description.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <!-- DYNAMIC CATEGORY-SPECIFIC FORM FIELDS -->
+          {% if category == 'pothole' %}
+            <div class="row g-3 pt-2 border-top">
+              <div class="col-md-6">
+                <label class="form-label fw-bold small text-secondary">Road Condition</label>
+                {{ form.road_condition }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold small text-secondary">Observed Severity</label>
+                {{ form.severity }}
+              </div>
+            </div>
+
+          {% elif category == 'water' %}
+            <div class="row g-3 pt-2 border-top">
+              <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Problem Type</label>
+                {{ form.water_problem_type }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Outage Duration</label>
+                {{ form.water_duration }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Affected Area</label>
+                {{ form.affected_households }}
+              </div>
+            </div>
+
+          {% elif category == 'waste' %}
+            <div class="row g-3 pt-2 border-top">
+              <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Waste Type</label>
+                {{ form.waste_type }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Accumulation Volume</label>
+                {{ form.waste_accumulation }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Duration Uncollected</label>
+                {{ form.waste_duration }}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- 2. PHOTOGRAPH CARD WITH LIVE PREVIEW -->
+        <div class="card card-civic p-4 mb-4">
+          <h5 class="fw-bold text-teal mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-camera-fill"></i> 2. Photograph Evidence {% if category == 'water' %}<span class="badge bg-light text-muted small">Optional</span>{% else %}<span class="text-danger">*</span>{% endif %}
+          </h5>
+          
+          <div class="row align-items-center">
+            <div class="col-md-6 mb-3 mb-md-0">
+              <label class="form-label fw-bold small text-secondary">Upload Site Image</label>
+              {{ form.image }}
+              <div class="form-text">Upload JPEG, PNG or WebP photo (Max 10MB). Image helps field team verify on arrival.</div>
+              {% if form.image.errors %}
+                <div class="text-danger small mt-1">{{ form.image.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <div class="image-preview-box text-center p-3" id="image-preview-container">
+                <div id="upload-placeholder">
+                  <i class="bi bi-image text-muted" style="font-size: 2.5rem;"></i>
+                  <p class="text-muted small mb-0 mt-1">Image preview will appear here</p>
+                </div>
+                <img id="preview-image" src="#" alt="Upload Preview" class="img-fluid d-none rounded border shadow-sm" style="max-height: 180px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Photo GPS Analysis Alert -->
+          <div id="photo-gps-alert" class="d-none"></div>
+        </div>
+
+
+        <!-- 3. LOCATION & INTERACTIVE LEAFLET MAP -->
+        <div class="card card-civic p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h5 class="fw-bold text-teal m-0 d-flex align-items-center gap-2">
+              <i class="bi bi-geo-alt-fill"></i> 3. Pin Location on Map
+            </h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-locate-me">
+              <i class="bi bi-crosshair me-1"></i> Use My Current Location
+            </button>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-secondary">Street Landmark / Locality Name</label>
+            {{ form.location_name }}
+          </div>
+
+          <!-- Selected Coordinates Status -->
+          <div class="mb-2" id="selected-coords-text">
+            <span class="badge bg-secondary"><i class="bi bi-info-circle me-1"></i> Tap anywhere on the map to pin the exact problem location</span>
+          </div>
+
+          <!-- Leaflet Map Container -->
+          <div id="map-picker" class="border shadow-sm mb-3"></div>
+
+          <!-- Nearby Similar Reports Alert -->
+          <div id="nearby-reports-alert" class="alert alert-warning d-none" role="alert" style="border-radius: 12px;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="bi bi-exclamation-triangle-fill fs-5 text-warning"></i>
+              <strong class="fw-bold">Possible related reports found nearby!</strong>
+            </div>
+            <p class="small mb-2 text-dark">
+              We found <span id="nearby-count-span" class="fw-bold">0</span> similar {{ category_display }} report(s) within this geographic area. Your report will be counted towards priority assessment without blocking submission.
+            </p>
+            <div id="nearby-reports-list" class="bg-white p-2 rounded border small"></div>
+          </div>
+        </div>
+
+        <!-- 4. REPORTER CONTACT (OPTIONAL) -->
+        <div class="card card-civic p-4 mb-4">
+          <h5 class="fw-bold text-teal mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-person-badge-fill"></i> 4. Resident Info <span class="badge bg-light text-muted small">Optional</span>
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-secondary">Your Name</label>
+              {{ form.reporter_name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-secondary">Phone / Email for SMS/Email Updates</label>
+              {{ form.reporter_contact }}
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBMIT & AI ANALYZE ACTION BAR -->
+        <div class="d-flex gap-3 justify-content-end align-items-center flex-wrap pt-2">
+          <button type="button" class="btn btn-outline-teal btn-lg px-4 py-3" id="btn-analyze-report" style="border-color: var(--cf-primary); color: var(--cf-primary); border-width: 2px;">
+            <i class="bi bi-stars me-1 text-warning"></i> Analyze Report with AI
+          </button>
+          <button type="submit" class="btn btn-civic-primary btn-lg px-5 py-3 shadow">
+            <i class="bi bi-send-fill me-2"></i> Submit Report Directly
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- AI ANALYSIS & RECOMMENDATION REVIEW MODAL -->
+<div class="modal fade" id="aiReviewModal" tabindex="-1" aria-labelledby="aiReviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #0f766e 0%, #0f172a 100%);">
+        <div class="d-flex align-items-center gap-2">
+          <div class="fs-4 text-warning"><i class="bi bi-stars"></i></div>
+          <div>
+            <h5 class="modal-title fw-bold" id="aiReviewModalLabel">AI-Assisted Analysis Review</h5>
+            <span class="badge bg-teal-light text-dark small" id="ai-status-badge">AI-assisted recommendation</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-4" style="background: #f8fafc;">
+        
+        <div class="ai-recommendation-card mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="ai-badge"><i class="bi bi-cpu-fill"></i> CivicFix Analysis Engine</span>
+            <span id="ai-res-priority-badge" class="badge bg-danger px-3 py-2 fs-6">
+              Priority: <span id="ai-res-priority">High</span>
+            </span>
+          </div>
+
+          <h5 class="fw-bold mb-2 text-dark" id="ai-res-issue-type">Road Damage Assessment</h5>
+          <p class="text-secondary small mb-3" id="ai-res-summary">AI summary will appear here.</p>
+
+          <div class="row g-3 small">
+            <div class="col-md-6">
+              <div class="p-3 bg-white rounded border">
+                <div class="text-muted fw-bold mb-1"><i class="bi bi-shield-exclamation text-danger me-1"></i> Safety Risk</div>
+                <div id="ai-res-safety-risk" class="fw-semibold text-dark">High risk of vehicular disruption</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-white rounded border">
+                <div class="text-muted fw-bold mb-1"><i class="bi bi-people-fill text-primary me-1"></i> Impact</div>
+                <div id="ai-res-impact" class="fw-semibold text-dark">Local commuters and residents</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-white rounded border">
+                <div class="text-muted fw-bold mb-1"><i class="bi bi-building text-info me-1"></i> Recommended Department</div>
+                <div id="ai-res-department" class="fw-bold text-teal">Road Maintenance</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-white rounded border">
+                <div class="text-muted fw-bold mb-1"><i class="bi bi-tools text-warning me-1"></i> Recommended Action</div>
+                <div id="ai-res-action" class="fw-semibold text-dark">Site inspection and patching</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-2 bg-white rounded border mt-3 small">
+            <span class="text-muted fw-bold">Priority Reasoning:</span>
+            <span id="ai-res-reasoning" class="text-secondary"></span>
+          </div>
+        </div>
+
+        <div class="alert alert-info py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-check2-circle fs-5"></i>
+          <span>This recommendation will be forwarded directly to the municipal team upon confirmation.</span>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-white border-top">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Edit Form Details</button>
+        <button type="button" class="btn btn-civic-primary px-4" id="btn-confirm-submit">
+          <i class="bi bi-check-lg me-1"></i> Confirm & Submit Report
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/map_picker.js' %}"></script>
+<script src="{% static 'js/reporting.js' %}"></script>
+{% endblock %}

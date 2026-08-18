@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Issue #{{ issue.tracking_code }} | CivicFix Action Center{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- BREADCRUMB & HEADER -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Civic Action Center</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Issue #{{ issue.tracking_code }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="fs-4">{{ issue.icon_emoji }}</span>
+        <span class="badge bg-dark font-monospace fs-6">{{ issue.tracking_code }}</span>
+        <span class="badge {{ issue.priority_badge_class }}">{{ issue.priority }} Priority</span>
+        <span class="badge badge-civic {{ issue.status_badge_class }}">{{ issue.status }}</span>
+      </div>
+      <h1 class="fw-bold fs-3 mb-1">{{ issue.title }}</h1>
+      <p class="text-muted small mb-0">
+        <i class="bi bi-clock me-1"></i> Reported on {{ issue.created_at|date:"F d, Y, g:i a" }} by <strong>{{ issue.reporter_name|default:"Resident" }}</strong>
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'track_detail' issue.tracking_code %}" class="btn btn-outline-secondary btn-sm" target="_blank">
+        <i class="bi bi-eye me-1"></i> Resident View
+      </a>
+      <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    
+    <!-- LEFT COLUMN: REPORT, AI ANALYSIS, LOCATION & RESOLUTION PROOF -->
+    <div class="col-lg-8">
+      
+      <!-- 1. RESIDENT REPORT CONTENT -->
+      <div class="card card-civic p-4 mb-4">
+        <h5 class="fw-bold text-teal mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-person-fill"></i> Resident Report Details
+        </h5>
+
+        <div class="mb-3">
+          <h6 class="fw-bold text-secondary mb-1">Problem Description</h6>
+          <p class="text-dark bg-light p-3 rounded border" style="white-space: pre-line;">{{ issue.description }}</p>
+        </div>
+
+        <!-- Category specifics -->
+        <div class="row g-3 p-3 bg-light rounded border mb-3 small">
+          <div class="col-6 col-md-4">
+            <span class="text-muted d-block">Category:</span>
+            <strong>{{ issue.get_issue_category_display }}</strong>
+          </div>
+          {% if issue.issue_category == 'pothole' %}
+            <div class="col-6 col-md-4">
+              <span class="text-muted d-block">Road Condition:</span>
+              <strong>{{ issue.road_condition|default:"Not specified" }}</strong>
+            </div>
+            <div class="col-6 col-md-4">
+              <span class="text-muted d-block">Reported Severity:</span>
+              <strong>{{ issue.severity }}</strong>
+            </div>
+          {% elif issue.issue_category == 'water' %}
+            <div class="col-6 col-md-4">
+              <span class="text-muted d-block">Problem Type:</span>
+              <strong>{{ issue.water_problem_type|default:"Not specified" }}</strong>
+            </div>
+            <div class="col-6 col-md-4">
+              <span class="text-muted d-block">Duration:</span>
+              <strong>{{ issue.water_duration|default:"Not specified" }}</strong>
+            </div>
+            <div class="col-6 col-md-4">
+              <span class="text-muted d-block">Affected Area:</span>
+              <strong>{{ issue.affected_households|default:"Not specified" }}</strong>
+            </div>
+          {% elif issue.issue_category == 'waste' %}
+            <div class="col-6 col-md-4">
+              <span class="text-muted d-block">Waste Type:</span>
+              <strong>{{ issue.waste_type|default:"Not specified" }}</strong>
+            </div>
+            <div class="col-6 col-md-4">
+              <span class="text-muted d-block">Accumulation:</span>
+              <strong>{{ issue.waste_accumulation|default:"Not specified" }}</strong>
+            </div>
+            <div class="col-6 col-md-4">
+              <span class="text-muted d-block">Duration:</span>
+              <strong>{{ issue.waste_duration|default:"Not specified" }}</strong>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if issue.image %}
+          <div>
+            <h6 class="fw-bold text-secondary mb-2">Original Resident Photograph (Before)</h6>
+            <div class="proof-card" style="max-width: 460px;">
+              <img src="{{ issue.image.url }}" alt="Resident uploaded issue photo">
+              <span class="proof-badge before">Before (Resident Evidence)</span>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 2. AI ANALYSIS BREAKDOWN -->
+      <div class="card card-civic p-4 mb-4" style="background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%); border: 1.5px solid #99f6e4;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-teal m-0 d-flex align-items-center gap-2">
+            <i class="bi bi-cpu-fill"></i> AI-Assisted Civic Analysis
+          </h5>
+          <span class="badge {% if issue.ai_available %}bg-teal text-white{% else %}bg-secondary text-white{% endif %} small">
+            {% if issue.ai_available %}<i class="bi bi-check2 me-1"></i> Groq AI Model{% else %}<i class="bi bi-shield-check me-1"></i> Smart Rule Engine{% endif %}
+          </span>
+        </div>
+
+        <div class="mb-3">
+          <div class="fw-bold text-secondary small">Executive Summary:</div>
+          <p class="text-dark fw-semibold mb-0">{{ issue.ai_summary|default:issue.title }}</p>
+        </div>
+
+        <div class="row g-3 small">
+          <div class="col-md-6">
+            <div class="p-3 bg-white rounded border">
+              <div class="text-muted fw-bold mb-1"><i class="bi bi-shield-shaded text-danger me-1"></i> Safety Risk Assessment</div>
+              <div class="text-dark">{{ issue.safety_risk|default:"Standard municipal attention recommended." }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-white rounded border">
+              <div class="text-muted fw-bold mb-1"><i class="bi bi-people-fill text-primary me-1"></i> Scope of Public Impact</div>
+              <div class="text-dark">{{ issue.impact|default:"Local residents and commuters in vicinity." }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-white rounded border">
+              <div class="text-muted fw-bold mb-1"><i class="bi bi-building text-info me-1"></i> Recommended Department</div>
+              <div class="fw-bold text-teal">{{ issue.recommended_department|default:issue.get_issue_category_display }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-white rounded border">
+              <div class="text-muted fw-bold mb-1"><i class="bi bi-wrench-adjustable text-warning me-1"></i> Recommended Action</div>
+              <div class="text-dark">{{ issue.recommended_action|default:"Dispatch field team for inspection." }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. RESOLUTION PROOF (SIDE BY SIDE BEFORE & AFTER) -->
+      {% if issue.is_resolved or issue.resolution_image %}
+        <div class="card card-civic p-4 mb-4 border-success">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-success m-0 d-flex align-items-center gap-2">
+              <i class="bi bi-patch-check-fill"></i> RESOLUTION PROOF
+            </h5>
+            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1">Verified Resolution</span>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <!-- BEFORE -->
+            <div class="col-md-6">
+              <div class="proof-card">
+                {% if issue.image %}
+                  <img src="{{ issue.image.url }}" alt="Before">
+                {% else %}
+                  <div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height: 240px;">
+                    No Before Photo Provided
+                  </div>
+                {% endif %}
+                <span class="proof-badge before">BEFORE (Reported)</span>
+              </div>
+            </div>
+
+            <!-- AFTER -->
+            <div class="col-md-6">
+              <div class="proof-card">
+                {% if issue.resolution_image %}
+                  <img src="{{ issue.resolution_image.url }}" alt="After Resolution">
+                {% else %}
+                  <div class="d-flex align-items-center justify-content-center bg-light text-success fw-bold" style="height: 240px;">
+                    Resolution Note Recorded
+                  </div>
+                {% endif %}
+                <span class="proof-badge after">AFTER (Resolved Proof)</span>
+              </div>
+            </div>
+          </div>
+
+          {% if issue.resolution_note %}
+            <div class="p-3 bg-light rounded border">
+              <h6 class="fw-bold text-success mb-1"><i class="bi bi-journal-check me-1"></i> Resolution Note / Work Completed</h6>
+              <p class="text-dark mb-0 small">{{ issue.resolution_note }}</p>
+              {% if issue.resolved_at %}
+                <div class="small text-muted mt-2">
+                  <i class="bi bi-calendar-check"></i> Officially resolved on {{ issue.resolved_at|date:"F d, Y, g:i a" }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- 4. LOCATION & NEARBY REPORTS -->
+      <div class="card card-civic p-4 mb-4">
+        <h5 class="fw-bold text-teal mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-geo-alt-fill"></i> Location & Vicinity Context
+        </h5>
+
+        <div class="mb-3">
+          <strong>Landmark:</strong> {{ issue.location_name|default:"Marked Pin" }}
+          {% if issue.latitude and issue.longitude %}
+            <span class="badge bg-secondary ms-2">{{ issue.latitude }}, {{ issue.longitude }}</span>
+          {% endif %}
+        </div>
+
+        {% if issue.latitude and issue.longitude %}
+          <div id="detail-map" class="border shadow-sm mb-3"></div>
+        {% else %}
+          <div class="alert alert-light text-muted border">No GPS coordinates recorded for this report.</div>
+        {% endif %}
+
+        <!-- Nearby Related Reports -->
+        <h6 class="fw-bold text-secondary mt-3 mb-2">Nearby Related Reports in Vicinity ({{ nearby_count }})</h6>
+        {% if nearby_reports %}
+          <div class="list-group list-group-flush border rounded">
+            {% for item in nearby_reports %}
+              <a href="{% url 'issue_detail' item.issue.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-dark me-2">{{ item.issue.tracking_code }}</span>
+                  <span class="fw-semibold text-dark">{{ item.issue.title }}</span>
+                  <div class="small text-muted">{{ item.issue.location_name|default:"Nearby Location" }}</div>
+                </div>
+                <div class="text-end">
+                  <span class="badge bg-secondary">{{ item.distance_m }}m away</span>
+                  <div class="badge {{ item.issue.priority_badge_class }} d-block mt-1">{{ item.issue.priority }}</div>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="small text-muted mb-0">No other active reports detected within 800m of this location.</p>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: ADMIN ACTION & RESOLUTION WORKFLOW FORM -->
+    <div class="col-lg-4">
+      <div class="card card-civic p-4 sticky-top" style="top: 90px; border-top: 5px solid var(--cf-primary);">
+        <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-sliders"></i> Civic Action Panel
+        </h5>
+        <p class="small text-muted mb-2">
+          Assign responsible municipal department, update operational status, and record resolution proof.
+        </p>
+
+        <div class="alert alert-success py-2 px-3 small d-flex align-items-center justify-content-between mb-3 border-success-subtle">
+          <div>
+            <i class="bi bi-award-fill text-warning me-1"></i>
+            <strong>Officer Impact Reward:</strong>
+          </div>
+          <span class="badge bg-success">
+            {% if issue.priority == 'Critical' %}+250 Points{% elif issue.priority == 'High' %}+150 Points{% elif issue.priority == 'Medium' %}+100 Points{% else %}+50 Points{% endif %} on Resolve
+          </span>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          
+          <div class="mb-3">
+
+            <label class="form-label fw-bold small text-secondary">Operational Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+              <div class="text-danger small mt-1">{{ form.status.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-secondary">Assign Department</label>
+            {{ form.assigned_department }}
+            {% if form.assigned_department.errors %}
+              <div class="text-danger small mt-1">{{ form.assigned_department.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-secondary">Admin Field Instructions / Notes</label>
+            {{ form.admin_action }}
+            {% if form.admin_action.errors %}
+              <div class="text-danger small mt-1">{{ form.admin_action.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <!-- RESOLUTION EVIDENCE UPLOAD SECTION -->
+          <div class="p-3 bg-light rounded border mb-3" id="resolution-evidence-box">
+            <h6 class="fw-bold text-success mb-2 d-flex align-items-center gap-1">
+              <i class="bi bi-camera-fill"></i> Resolution Proof (Required for 'Resolved')
+            </h6>
+            
+            <div class="mb-2">
+              <label class="form-label small fw-bold">After-Photo Evidence</label>
+              {{ form.resolution_image }}
+              <div class="form-text" style="font-size: 0.75rem;">Photograph showing repaired road, fixed pipeline, or cleaned area.</div>
+              {% if form.resolution_image.errors %}
+                <div class="text-danger small mt-1">{{ form.resolution_image.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-0">
+              <label class="form-label small fw-bold">Resolution Note</label>
+              {{ form.resolution_note }}
+              {% if form.resolution_note.errors %}
+                <div class="text-danger small mt-1">{{ form.resolution_note.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-civic-primary w-100 py-2 fw-bold shadow-sm">
+            <i class="bi bi-check2-circle me-1"></i> Save Action & Update
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if issue.latitude and issue.longitude %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const lat = {{ issue.latitude }};
+  const lng = {{ issue.longitude }};
+  const map = L.map('detail-map').setView([lat, lng], 15);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  const icon = L.divIcon({
+    className: 'custom-detail-pin',
+    html: '<div style="background:{{ issue.category_color }};width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">{{ issue.icon_emoji }}</div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+
+  L.marker([lat, lng], { icon: icon }).addTo(map)
+    .bindPopup("<strong>#{{ issue.tracking_code }}</strong><br>{{ issue.title }}")
+    .openPopup();
+});
+</script>
+{% endif %}
+{% endblock %}

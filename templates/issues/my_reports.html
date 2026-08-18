@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resident Tracking - My Reports | CivicFix{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <span class="badge bg-teal-light text-teal fw-bold px-3 py-1 mb-1">Citizen Portal</span>
+      <h1 class="fw-bold fs-2 m-0">My Reported Issues</h1>
+      <p class="text-muted small mb-0">Track real-time municipal response and resolution evidence.</p>
+    </div>
+    
+    <div class="d-flex gap-2">
+      <a href="{% url 'report_issue' %}" class="btn btn-civic-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Report New Issue
+      </a>
+    </div>
+  </div>
+
+  <!-- CITIZEN KARMA REWARDS SUMMARY -->
+  {% if user.is_authenticated and user_profile %}
+    <div class="card card-civic p-4 mb-4 text-white border-0 shadow-sm" style="background: linear-gradient(135deg, #0f766e 0%, #115e59 50%, #042f2e 100%);">
+      <div class="row align-items-center g-3">
+        <div class="col-md-7">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-warning text-dark fw-bold"><i class="bi bi-award-fill me-1"></i>{{ user_profile.badge_title }}</span>
+            <span class="text-white-50 small">Citizen Rewards Active</span>
+          </div>
+          <h4 class="fw-bold m-0 mb-1">Citizen Karma: {{ user_profile.points }} Points</h4>
+          <p class="small text-white-50 mb-0">Earn +50 points per verified civic report & +100 bonus points when your issue is resolved by field teams!</p>
+        </div>
+        <div class="col-md-5">
+          <div class="d-flex gap-3 justify-content-md-end">
+            <div class="bg-white bg-opacity-10 rounded p-3 text-center" style="min-width: 100px;">
+              <div class="fs-4 fw-bold text-warning">{{ user_profile.reports_count }}</div>
+              <div class="small text-white-50" style="font-size: 0.75rem;">Reports Filed</div>
+            </div>
+            <div class="bg-white bg-opacity-10 rounded p-3 text-center" style="min-width: 100px;">
+              <div class="fs-4 fw-bold text-white">{{ user_profile.points }}</div>
+              <div class="small text-white-50" style="font-size: 0.75rem;">Karma Score</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- QUICK TRACKING SEARCH -->
+  <div class="card card-civic p-3 mb-4 bg-light border">
+
+    <form class="row g-2 align-items-center" onsubmit="event.preventDefault(); const c=this.querySelector('input').value.trim(); if(c) window.location.href='/track/'+c;">
+      <div class="col-md-8 col-lg-9">
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" placeholder="Enter tracking code (e.g. CF-9821) to check any public report status" required>
+        </div>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <button type="submit" class="btn btn-outline-teal w-100 fw-bold">
+          Look Up Report
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {% if issues %}
+    <div class="row g-4">
+      {% for issue in issues %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card-civic h-100 p-3 d-flex flex-column" style="border-top: 4px solid {{ issue.category_color }};">
+            
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge bg-dark font-monospace">{{ issue.tracking_code }}</span>
+              <span class="badge {{ issue.priority_badge_class }}">{{ issue.priority }}</span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="fs-4">{{ issue.icon_emoji }}</span>
+              <h5 class="fw-bold fs-6 mb-0 text-truncate">{{ issue.title }}</h5>
+            </div>
+
+            <p class="small text-muted mb-2 text-truncate-2" style="min-height: 38px;">
+              {{ issue.description }}
+            </p>
+
+            <div class="small text-muted mb-3">
+              <div><i class="bi bi-geo-alt"></i> {{ issue.location_name|default:"Marked Location" }}</div>
+              <div><i class="bi bi-calendar3"></i> {{ issue.created_at|date:"M d, Y, g:i a" }}</div>
+            </div>
+
+            <!-- Status Indicator -->
+            <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+              <span class="badge badge-civic {{ issue.status_badge_class }}">{{ issue.status }}</span>
+              <a href="{% url 'track_detail' issue.tracking_code %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                Track Live <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="card card-civic text-center py-5 px-4 my-4">
+      <div class="icon-box bg-light text-muted mb-3" style="width: 72px; height: 72px; font-size: 2.2rem;">
+        📋
+      </div>
+      <h4 class="fw-bold mb-2">No Reports Found in Your Session</h4>
+      <p class="text-muted small max-w-500 mx-auto mb-4">
+        You haven't submitted any civic reports yet in this browser session. Report a road damage, water outage, or waste accumulation issue to start tracking.
+      </p>
+      <a href="{% url 'report_issue' %}" class="btn btn-civic-primary mx-auto">
+        <i class="bi bi-plus-circle-fill me-1"></i> Report Your First Civic Issue
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In | CivicFix{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      
+      <div class="card card-civic p-4 p-md-5 shadow-lg border-0" style="border-radius: 20px;">
+        <div class="text-center mb-4">
+          <div class="brand-badge justify-content-center mb-2">
+            <div class="logo-icon"><i class="bi bi-geo-fill"></i></div>
+            <div class="logo-text">Civic<span>Fix</span></div>
+          </div>
+          <h4 class="fw-bold">Sign In</h4>
+          <p class="text-muted small">Resident tracking and Civic Action Center access</p>
+        </div>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Username</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+              <input type="text" name="username" class="form-control" placeholder="Enter your username" required autofocus>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold small">Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+              <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-civic-primary w-100 py-2 fw-bold shadow-sm mb-3">
+            Sign In <i class="bi bi-arrow-right-short ms-1"></i>
+          </button>
+        </form>
+
+        <div class="text-center border-top pt-3 small text-muted">
+          Don't have an account? <a href="{% url 'register' %}" class="fw-bold text-teal text-decoration-none">Create Citizen Account</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
